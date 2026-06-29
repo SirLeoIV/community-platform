@@ -1,10 +1,11 @@
 import type { MapPin } from 'oa-shared';
-import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
-import { Box, Flex, Text } from 'theme-ui';
+import { JSX, useEffect, useRef, useState } from 'react';
+import Masonry from 'react-masonry-css';
+import { Flex, Text } from 'theme-ui';
 import { Button } from '../Button/Button';
 import { CardListItem } from '../CardListItem/CardListItem';
 import { Icon } from '../Icon/Icon';
+import './styles.css';
 
 export interface IProps {
   list: MapPin[];
@@ -20,6 +21,24 @@ export const MapCardList = (props: IProps) => {
   const [renderCount, setRenderCount] = useState<number>(ITEMS_PER_RENDER);
   const [displayItems, setDisplayItems] = useState<JSX.Element[]>([]);
   const { list, onPinClick, selectedPin, viewport } = props;
+
+  const [cols, setCols] = useState(4);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const containerObserver = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      const minColumnWidth = 250;
+
+      setCols(Math.max(1, Math.floor(width / minColumnWidth)));
+    });
+
+    if (containerRef.current) {
+      containerObserver.observe(containerRef.current);
+    }
+
+    return () => containerObserver.disconnect();
+  }, []);
 
   useEffect(() => {
     setRenderCount(ITEMS_PER_RENDER);
@@ -61,22 +80,20 @@ export const MapCardList = (props: IProps) => {
       </Flex>
       {isListEmpty && EMPTY_LIST}
       {!isListEmpty && (
-        <>
-          <Box
-            sx={{
-              columnWidth: '240px',
-              columnGap: 0,
-              '& > *': { breakInside: 'avoid' },
-            }}
+        <div ref={containerRef}>
+          <Masonry
+            breakpointCols={cols}
+            className="masonry-grid"
+            columnClassName="masonry-grid_column"
           >
             {displayItems}
-          </Box>
+          </Masonry>
           {hasMore && (
             <Flex sx={{ justifyContent: 'center' }}>
               <Button onClick={addRenderItems}>Show more</Button>
             </Flex>
           )}
-        </>
+        </div>
       )}
     </Flex>
   );
